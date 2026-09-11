@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Leaflet + OSM Starter</title>
+
+  <!-- Leaflet's own core stylesheet (NOT theme styling — this is required for the map to render/function at all: tile grid, controls, markers, z-index panes) -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+
+  <style>
+    /* Bare minimum layout CSS — no theme, no color, just structural placement */
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+
+    /* Page wrapper — left spacer + main column */
+    #page {
+      display: flex;
+      flex-direction: row;
+      height: 100%;
+    }
+
+    /* Left blank spacer — wider than header/footer padding.
+       Background intentionally left unset so it matches the default
+       (uncolored) look of the nav/footer placeholders, per your call
+       to hold off on color decisions until later. */
+    #left-space {
+      flex: 0 0 300px; /* fixed width; adjust as needed */
+      min-width: 200px;
+    }
+
+    /* Main content column stacks nav / map / footer vertically */
+    #content-wrapper {
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 auto;
+      min-height: 0; /* allow map to shrink within flex column */
+    }
+
+    #nav-placeholder, #footer-placeholder {
+      flex: 0 0 auto; /* don't grow or shrink — height is whatever its content + padding needs */
+      padding: 24px 16px;
+      box-sizing: border-box;
+    }
+
+    /* Map container fills remaining vertical space in the main column */
+    #map-container {
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+
+    #map {
+      height: 100%;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="page">
+
+    <!-- Left blank spacer — wider than header/footer -->
+    <div id="left-space" aria-hidden="true"></div>
+
+    <!-- Main content column -->
+    <div id="content-wrapper">
+
+      <!-- Nav placeholder — swap in real menu/logo/nav markup later -->
+      <div id="nav-placeholder">
+        <h1>OneCity MN</h1>
+      </div>
+
+      <!-- The map lives inside this rectangle, not the full viewport -->
+      <div id="map-container">
+        <!-- This div is the map's mount point. Leaflet needs an element with a defined height or it renders as a 0px sliver. -->
+        <div id="map" tabindex="0" aria-label="Map of Twin Cities area"></div>
+      </div>
+
+      <!-- Footer/text placeholder — swap in real copy, legend, credits, etc. -->
+      <div id="footer-placeholder">
+        <p>[ footer / text placeholder ]</p>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Leaflet's JS library -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    // 1. Initialize the map object, bound to the #map div, centered on the Twin Cities midpoint.
+    // defaultZoom is captured as its own variable because it does double duty below —
+    // both the starting view AND the zoom-out floor depend on it.
+    const twinCitiesCenter = [44.965, -93.177]; // roughly between Minneapolis and St. Paul
+    const defaultZoom = 12;
+
+    const map = L.map('map', {
+      minZoom: defaultZoom, // hard floor — user can zoom IN past this, but never OUT past launch level
+      maxZoom: 19,
+      inertia: true
+    }).setView(twinCitiesCenter, defaultZoom);
+
+    // 2. Add the tile layer — this is the actual visual basemap.
+    // CartoDB Positron: same underlying OSM data, lighter/minimal rendering style.
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19,
+      // Attribution must credit BOTH OSM (the underlying data) and Carto (the rendering/hosting)
+      attribution: '&copy; OpenStreetMap contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+    }).addTo(map);
+
+    // 3. Constrain the pannable area to exactly what's visible on initial page load.
+    // Reading the map's own rendered viewport via getBounds() means the boundary
+    // always matches what the user actually saw at launch, regardless of screen
+    // size or container shape — zooming in just explores deeper within that view.
+    const initialBounds = map.getBounds();
+
+    map.setMaxBounds(initialBounds);       // prevents panning past the initial launch view
+    map.options.maxBoundsViscosity = 0.7;  // soft pull back at the edge, not a hard stop
+
+    // 4. Placeholder marker — swap or remove once you're building real content
+    L.marker(twinCitiesCenter)
+      .addTo(map)
+      .bindPopup('Starting point.');
+
+    // 5. Placeholder for future layers (GeoJSON, polygons, custom markers, etc.)
+    // const myLayer = L.geoJSON(data).addTo(map);
+
+    // 6. Mask everything outside the highlighted metro boundary.
+    // This is a single polygon with two rings: a giant outer ring (the whole
+    // visible world) and an inner ring (the metro shape). Leaflet fills the
+    // gap between them — i.e. everything OUTSIDE the shape gets greyed out,
+    // and the inner shape stays clear/transparent.
+
+    const outerRing = [
+      [-90, -180], [-90, 180], [90, 180], [90, -180] // covers the entire world
+    ];
+
+    // PLACEHOLDER — replace with real coordinates traced from geojson.io.
+    // Order matters less than closing the loop (first/last point should match).
+    const metroBoundary = [
+      [45.05, -93.35],
+      [45.02, -93.10],
+      [44.95, -92.95],
+      [44.85, -93.05],
+      [44.83, -93.30],
+      [44.90, -93.40],
+      [45.05, -93.35] // closes the loop
+    ];
+
+    L.polygon([outerRing, metroBoundary], {
+      stroke: false,       // no border on the mask itself
+      fillColor: '#888',   // grey
+      fillOpacity: 0.6,    // adjust darkness to taste
+      fillRule: 'evenodd'  // this is what creates the "donut hole" effect
+    }).addTo(map);
+  </script>
+
+</body>
+</html>
